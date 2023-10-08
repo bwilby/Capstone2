@@ -70,4 +70,65 @@ def announce_listen(tester_ip: str, tester_port: int, mcast_grp: str, mcast_send
 
         except Exception as e:
             logging.error(e)
+def camera_thread(camera_ip: str, camera_port: int):
+    """Iterates through a set of tests and sends them to a camera"""
+    logging.info(f"Testing camera on {camera_ip}:{camera_port}")
+
+    def make_new_socket():
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((camera_ip, camera_port))
+        return sock
+
+    sock = make_new_socket()
+
+    test_scripts = [script for script in os.listdir("tests") if script.endswith(".py")]
+    logging.debug(f"Scripts: {test_scripts}")
+
+    for script in test_scripts:
+        # https://stackoverflow.com/a/59032021
+        test_spec = importlib.util.spec_from_file_location("test_module", "tests/" + script)
+        test_module = importlib.util.module_from_spec(test_spec)
+        test_spec.loader.exec_module(test_module)
+
+        for test_function in test_module.TESTS:
+            logging.info(f"Testing {script} / {test_function.__name__}")
+            if not viper_utils.sock_open(sock):
+                logging.debug("Socket closed, re-opening")
+                sock = make_new_socket()
+
+            try:
+                #test(sock, test_data)
+                success, msg = test_function(sock)
+                if success:
+                    logging.info(f"Test Ok: {msg}")
+                else:
+                    logging.warning(f"Test Failed: {msg}")
+
+            except Exception as e:
+                logging.error(e)
+
+            time.sleep(1)
+
+    logging.info(f"Disconnecting camera on {camera_ip}:{camera_port}")
+    sock.close()
+
+
+def test(sock, request: bytes) -> bool:
+    """Script that send a request and compares result from an individual camera"""
+    #try:
+    logging.debug(f"Sending to camera\n{request}")
+    sock.send(request)
+    response = sock.recv(RECV_SIZE)
+    logging.debug(f"Received response\n{response}")
+    return True
+
+    #except:
+    #    logging.error(f"Could not connect to camera at {camera_ip}:{camera_port}")
+    #    return False
+
+
+if __name__ == "__main__":
+    y = threading.Thread(target=announce_listen, args=(TESTER_IP, TESTER_PORT, MCAST_GRP, MCAST_SEND_PORT, MCAST_RECV_PORT))
+    y.start()
+    y.join()
 
