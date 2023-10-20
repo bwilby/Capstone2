@@ -452,3 +452,520 @@ def parse_peer_message(decrypted_message_bytes):
     print("decrypted payload ", payload)
     print("transaction_id, message_type, seq, numseq, message_len",transaction_id, message_type, seq, numseq, message_len)
     return transaction_id, message_type, seq, numseq, message_len, aes_key, aes_iv, payload
+# by default it is a command message, #5 means resend message
+def send_peer_message(sock, PUB_KEY, server_address, message, aes_key, aes_iv, message_type=4):
+    # if i >= constants.MAX_TRIES_BROKER:
+    #    return None
+    print("sending peer message...")
+    try:
+        '''
+        transaction_id = random.randint(1000000, 9000000)
+        payload_bytes = message #bytearray(message.encode('utf-8'))
+        # KEY + IV/n
+        AES_bytes = bytearray(aes_key) + bytearray(aes_iv) + get_byte(15, 1)
+        print("aes_key, aes_iv", aes_key, aes_iv)
+        message_header = format_peer_message_header(
+            transaction_id, message_type, len(payload_bytes), 1, 1)
+        #print("message_header size is ", len(message_header))
+        #message_bytes = security.encrypt_rsa(
+        #    message_header+AES_bytes+payload_bytes, PUB_KEY)
+        print("rsa header before encryption is ", message_header+AES_bytes)
+        enc_bytes = bytearray(security.encrypt_rsa(
+            message_header+AES_bytes, PUB_KEY))
+        #print("rsa header is ", enc_bytes, " of size ", len(enc_bytes))
+        print("unencrypted bytes", payload_bytes)
+        pay_bytes = bytearray(security.encrypt_aes(payload_bytes, aes_key, aes_iv))
+        message_bytes = enc_bytes + pay_bytes
+        print("encrypted bytes", pay_bytes)
+        
+        if message_bytes is None:
+            print("failed to message ", payload_bytes)
+            generate_encrypt_header(1, 1, 1)
+
+        #print("message before header is ", message_bytes)
+        final = generate_encrypt_header(1, 1, 1)  + bytearray(message_bytes)
+        '''
+        #final = generate_command_message(PUB_KEY, message, aes_key, aes_iv, message_type=message_type)
+        # sent a synch message now wait for response
+        send_ready = select.select([], [sock], [], 1)
+        if send_ready[1]:
+            sent = sock.sendto(message, server_address)
+        #sock.connect(server_address)
+    except Exception as err:
+        print("exception in send_peer_message", err)
+
+
+
+
+# by default it is a command message, #5 means resend message
+def generate_command_message(PUB_KEY, message, aes_key, aes_iv, transaction_id=None, message_type=4):
+    # if i >= constants.MAX_TRIES_BROKER:
+    #    return None
+    #print("sending peer message...of size", len(message))
+    try:
+        #print("unencrypted command message is ", bytearray(message))
+        #print("aes_key is ", aes_key)
+        #print("aes_iv is ", aes_iv)
+        if transaction_id is None:
+            transaction_id = random.randint(1000000, 9000000)
+        payload_bytes = message #bytearray(message.encode('utf-8'))
+        # KEY + IV/n
+        AES_bytes = bytearray(aes_key) + bytearray(aes_iv) + get_byte(15, 1)
+        message_header = format_peer_message_header(
+            transaction_id, message_type, len(payload_bytes), 1, 1)
+        #print("message_header size is ", len(message_header))
+        #message_bytes = security.encrypt_rsa(
+        #    message_header+AES_bytes+payload_bytes, PUB_KEY)
+        #print("rsa header before encryption is ", message_header+AES_bytes)
+        enc_bytes = bytearray(security.encrypt_rsa(
+            message_header+AES_bytes, PUB_KEY))
+        #print("rsa header after encryption is ", enc_bytes)
+        #print("rsa header is ", enc_bytes, " of size ", len(enc_bytes))
+        pay_bytes = bytearray(security.encrypt_aes(payload_bytes, aes_key, aes_iv))
+        message_bytes = enc_bytes + pay_bytes
+        #print("AES encrypted payload is ", pay_bytes)
+        #try:
+        #    print("trying to recover the payload")
+        #    tb = security.decrypt_aes(pay_bytes, aes_key, aes_iv)
+        #    print("decrypted bytes are ", tb)
+        #    cmsg = tb.decode('utf-8')
+        #    print("the message was ", cmsg)
+
+        #except Exception as err:
+        #    print("err in test decoding command message ", err)
+        
+        if message_bytes is None:
+            print("failed to message ", payload_bytes)
+            generate_encrypt_header(1, 1, 1)
+
+        #print("message before header is ", message_bytes)
+        final = generate_encrypt_header(1, 1, 1)  + bytearray(message_bytes)
+        #print("total message is ", final)
+        return final
+    except Exception as err:
+        print("exception in generate_command_message", err)
+'''
+def parse_peer_encrypted_message(PRIV_KEY, message):
+    headsize = constants.MESSAGE_HEADER_SIZE  + constants.ENCRYPTION_KEY_SIZE
+    encpayload = message[headsize:]
+    header_bytes = security.decrypt_rsa(message[0:headsize],PRIV_KEY)
+    print("got decrypted rsa header bytes")
+    key = message[constants.MESSAGE_HEADER_SIZE:constants.MESSAGE_HEADER_SIZE+16]
+    iv = message[constants.MESSAGE_HEADER_SIZE+16:constants.MESSAGE_HEADER_SIZE+32]
+    decpayload = security.decrypt_aes(encpayload, key, iv)
+    return key,iv,decpayload
+'''
+def parse_peer_encrypted_message(PRIV_KEY, message):
+    #print("total message is ", message)
+    #print("got message, type is ", type(message))
+    #message = message[constants.ENCRYPTION_HEADER_SIZE:]
+    #print("got message size is ", len(message))
+    message = message[constants.ENCRYPTION_HEADER_SIZE:]
+    #print("message after header removal is ", message)
+    headsize = constants.RSA_KEY_SIZE_IN_BYTES #constants.MESSAGE_HEADER_SIZE  + constants.ENCRYPTION_KEY_SIZE
+    encpayload = message[headsize:]
+    #print("rsa header is ", message[0:headsize])
+    header_bytes = security.decrypt_rsa(message[0:headsize],PRIV_KEY)
+    #print("decrypted the header_bytes size is ", len(header_bytes))
+    #print("got decrypted rsa header bytes ", header_bytes)
+    key = header_bytes[constants.MESSAGE_HEADER_SIZE:constants.MESSAGE_HEADER_SIZE+16]
+    iv = header_bytes[constants.MESSAGE_HEADER_SIZE+16:constants.MESSAGE_HEADER_SIZE+32]
+    #print("AES encrypted payload is ", encpayload)
+    #print("got aes_key, aes_iv ", key, iv)
+    decpayload = bytearray(security.decrypt_aes(encpayload, key, iv))
+    #print("decpayload is ", decpayload)
+    #try:
+    #    msg_str = decpayload.decode('utf-8')
+    #    print("messge is ", msg_str)
+    #except Exception as err:
+    #    print("Exception in parse_peer_encrypted_message ", err)
+    decpayload = bytearray(header_bytes)+decpayload
+    #print("decpayload is ", decpayload)
+    return key,iv,decpayload
+
+# add message_id as input  4 is for command  #3970643 4 1/1 32/nHEELLLLLLLOOOOOTHIS IS THE RESULT  #3970643 5 1/1 32/n1 2 4 5 7 8
+# return datetime, fragment list
+# Used in camera to send packets to device
+#def udp_send_fragments(message_bytes, fragment_size, sock, peer_address, transaction_id, aes_key, aes_iv, message_type=4):
+def udp_send_fragments(message_bytes, fragment_size, transaction_id, aes_key, aes_iv, message_type=4):
+
+    message_bytes = security.encrypt_aes(message_bytes, aes_key, aes_iv)
+    #print("send fragment function still has to be worked out here ... ")
+    total_sent = 0
+    last_sent = 0
+    seq = 1
+    print("fragment size is ", fragment_size, type(fragment_size))
+    print("message_bytes size is ", len(
+        message_bytes), type(len(message_bytes)))
+    # 65507 or higher results in error
+    # Number of Packets
+    num_seq = int(len(message_bytes) / fragment_size)
+    print("num_seq is ", num_seq, type(num_seq))
+    if len(message_bytes) % fragment_size != 0:
+        num_seq += 1
+
+    fragment_list = []
+    print("Num seq is ", num_seq)
+
+    # iterate through all fragments encrypt them using AES and send them
+    while seq <= num_seq:  # total_sent < len(message_bytes):
+        print("in send loop...", seq, " of ", num_seq)
+        send_bytes = None
+        send_length = 0
+        if fragment_size > len(message_bytes) - (last_sent + 1):
+            send_length = len(message_bytes) - (last_sent + 1)
+            send_bytes = message_bytes[last_sent:]
+            print("Length of last send is ", len(send_bytes))
+
+        else:
+            send_length = fragment_size
+            send_bytes = message_bytes[last_sent:last_sent+fragment_size]
+
+        # send_bytes = (str(message_id) + " " + str(seq) + "/" + str(num_seq) + " " + str(send_length) + "/n").encode() + send_bytes
+        header = format_peer_message_header(
+            transaction_id, message_type, send_length, seq, num_seq)
+        send_bytes = bytearray(header) + bytearray(send_bytes)
+        #print("udp message sent was", send_bytes)  # .decode('utf-8'))
+        encrypted_bytes = generate_encrypt_header(1, seq, num_seq)+ bytearray(send_bytes)#bytearray(security.encrypt_aes(send_bytes, aes_key, aes_iv))
+        fragment_list.append(encrypted_bytes)
+        #send_ready = select.select([], [sock], [], 1)
+        #if send_ready[1]:
+        #    sent = sock.sendto(encrypted_bytes, peer_address)
+        seq += 1
+        total_sent += send_length
+        last_sent += send_length
+    return [datetime_to_str(datetime.datetime.utcnow()), fragment_list]
+
+
+'''
+def fragment_parse(data):
+    try:
+        
+        print("parsing data fragment...")
+        #32 = space  47 = /     15 = /n
+        tokens = []
+        last_token = 0
+        #3970643 1/1 32/nHEELLLLLLLOOOOOTHIS IS THE RESULT
+        for x in range(0,len(data)):
+            if data[x] == 32 or data[x] == 47:
+                tokens.append(data[last_token:x])
+                last_token=x+1
+            if data[x] == 15:
+                last_token=x+1
+                break;
+
+
+        print("message_id", tokens[0], "seq", tokens[1], "num_seq",  tokens[2], "send_length", tokens[3])
+        return tokens[0], int(tokens[1]), int(tokens[2]), int(tokens[3]), data[last_token:len(data)-1]
+        
+    except Exception as err:
+        print("Exception in fragment_parse..", err)
+        return False,False,False,False,False
+'''
+
+
+# return msg  *** which is the the fully assembled packet
+# Used in device to assemble and request packets from camera
+'''
+def udp_assemble_fragments(sock, cam_addr, msg_queue, data, aes_key, aes_iv, cam_pub_key):
+    print("assembling udp fragments...")
+    # transaction_id, message_type, seq, numseq, payload
+    message_id, message_type, seq, num_seq, send_length, data = parse_received_fragment(
+        data)
+    # message_id, seq, num_seq, send_length, data = fragment_parse(data)
+
+    total_packets = num_seq
+    packet_list = [[]]*num_seq
+    packet_list[seq-1] = data
+    msg_id = message_id
+    rec_int = 1
+
+    MAX_TRIES = num_seq + 3
+    curr_try = 1
+    have_all = False
+
+    # There is only one fragment
+    if rec_int == total_packets:
+        have_all = True
+
+
+    # Attempt to receive all fragments, decrypt and assemble them
+    while have_all == False:
+        if not msg_queue.empty():
+            data = msg_queue.get()
+            print("received...", str(data)[-10:], " from ", cam_addr)
+
+            # If data is encrypted or decrypted
+            if data[0] == 1 or data[0] == 2:
+                dcr_data = data[1:]
+                if data[0] == 1:
+                    dcr_data = security.decrypt_aes(data[1:], aes_key, aes_iv)
+                message_id, message_type, seq, num_seq, send_length, data = parse_received_fragment(
+                    dcr_data)
+
+                # Induced Lost Fragments for sequences of 2 and 3 ------------------ Must be commented out after debugging
+                # if seq == 2 or seq == 3:
+                #     break
+
+                # If the fragment is from the same packet
+                if message_id == msg_id and len(packet_list[seq-1]) == 0:
+                    packet_list[seq-1] = data
+                    rec_int += 1
+                # Else add to the end of queue
+                else:
+                    payload_bytes = bytearray(b'\x01') + bytearray(dcr_data)
+                    msg_queue.put(payload_bytes)
+            # Else If the data is not encrypted or decrypted
+            else:
+                if data.decode("utf-8") == "HELLO":
+                    print("It is a hello message..")
+                    send_hello1(sock, cam_addr, cam_addr[1],cam_pub_key,aes_key,aes_iv)
+                else:
+                    print("shouldn't be here X Got the data ", str(data)[-10:])
+                    
+            if rec_int == num_seq:
+                have_all = True
+                break
+            time.sleep(0.1)
+        else:
+            if curr_try > MAX_TRIES:
+                break
+
+        curr_try += 1
+
+    # If we have not received all fragments send a Lost Fragments Request to the Camera
+    if have_all == False:
+        message = ""
+        # Construct a message of all sequences of lost fragments
+        for x in range(0, len(packet_list)):
+            if not packet_list[x]:
+                message += str(x+1) + " "
+                pass
+            else:
+                pass
+
+        send_request_message(sock,cam_addr,msg_id,message, aes_key, aes_iv, cam_pub_key)
+
+    # Reassemble Lost Fragments
+    curr_try = 1
+    while have_all == False:
+
+        if not msg_queue.empty():
+            data = msg_queue.get()
+            print("received...", str(data)[-10:], " from ", cam_addr)
+            if data.decode[0] == 72:
+                send_hello1(sock, cam_addr, cam_addr[1],cam_pub_key,aes_key,aes_iv)
+                continue
+
+            # If data is encrypted or decrypted
+            if data[0] == 1 or data[0] == 2:
+                dcr_data = data[1:]
+                if data[0] == 1:
+                    dcr_data = security.decrypt_aes(data[1:], aes_key, aes_iv)
+                message_id, message_type, seq, num_seq, send_length, data = parse_received_fragment(
+                    dcr_data)
+                
+                if message_id == msg_id and len(packet_list[seq-1]) == 0:
+                    print("Received Lost Packet " +
+                          str(data)[-10:], " from ", cam_addr)
+                    packet_list[seq-1] = data
+                    rec_int += 1
+                    curr_try = 0
+                else:
+                    payload_bytes = bytearray(b'\x01') + bytearray(dcr_data)
+                    msg_queue.put(payload_bytes)
+                    
+                curr_try += 1
+            else:
+                curr_try += 1
+
+        if rec_int == num_seq:
+            have_all = True
+            break
+        if curr_try > MAX_TRIES:
+            break
+
+    msg = []
+    if have_all:
+        for x in range(0, len(packet_list)):
+            msg.append(packet_list[x])
+
+    print("Got message")
+    return msg
+'''
+
+def udp_assemble_fragments(sock, cam_addr, msg_list, data, aes_key, aes_iv, cam_pub_key):
+    print("assembling fragments len is ", len(msg_list.keys()))
+    is_init = False
+    have_all = False
+    packet_list = None
+    for key in msg_list.keys():
+        data_ = msg_list[key]
+        #print("assembling fragments data[0] is ", data_[0])
+        if data_[0] == 1 or data_[0] == 2:
+            dcr_data = data_[constants.ENCRYPTION_HEADER_SIZE:]
+            if data_[0] == 1:
+                #dcr_data = security.decrypt_aes(data_[constants.ENCRYPTION_HEADER_SIZE:], aes_key, aes_iv)
+                #message_id, message_type, seq, num_seq, send_length, data = parse_received_fragment(dcr_data)
+                message_id, message_type, seq, num_seq, send_length, data = parse_received_fragment(data_[constants.ENCRYPTION_HEADER_SIZE:])
+                #print("type of data is ", type(data))
+                #print("received data", message_id, message_type, seq, num_seq, send_length)
+                if not is_init:
+                    total_packets = num_seq
+                    packet_list = [[]]*(num_seq)
+                    packet_list[seq-1] = data
+                    msg_id = message_id
+                    print("Got response with transaction id ", msg_id, seq, num_seq)
+                    rec_int = 1
+                    is_init = True
+
+            
+                if message_id == msg_id and len(packet_list[seq-1]) == 0:
+                    packet_list[seq-1] = data
+                    rec_int += 1
+
+                if rec_int == total_packets:
+                    have_all = True
+            else:
+                print("data doesn't have correct start byte and isn't encrypted ")
+
+        else:
+            print("the data is not encrypted, shouldn't be here??? ", data_)
+
+    print("done loop..........")
+    if have_all == False:
+        print("Don't have all packets")
+        message = ""
+        # Construct a message of all sequences of lost fragments
+        for x in range(0, len(packet_list)):
+            if not packet_list[x]:
+                message += str(x+1) + " "
+                print("message to resend is ", message)
+                pass
+            else:
+                pass
+
+        resend_msg = send_request_message(sock,cam_addr,msg_id,message, aes_key, aes_iv, cam_pub_key)
+        return None,resend_msg
+
+    else:
+        print("have all ", type(packet_list))
+        #msg = bytearray()
+        #for x in range(0, len(packet_list)):
+        #    print(type(packet_list[x]), x)#msg.append(packet_list[x])
+
+        
+        #msg = b"".join(bytes_obj for sublist in packet_list for bytes_obj in sublist)
+        msg = bytes().join(packet_list)
+        print("decrypting..", type(msg))
+        msg = security.decrypt_aes(msg, aes_key, aes_iv)
+        print("returning msg of size ", len(msg))
+        return msg,None
+
+#
+
+def send_request_message(sock,cam_addr,msg_id,message, aes_key, aes_iv, cam_pub_key):
+    payload_bytes = bytearray(message.encode('utf-8'))
+    final = generate_command_message(cam_pub_key, payload_bytes, aes_key, aes_iv, transaction_id=msg_id, message_type=5)
+    return final
+    '''
+    message_len = len(payload_bytes)
+
+    # Construct message header of type 5 (Request)
+    message_header = format_peer_message_header(
+        msg_id, 5, message_len, 1, 1)
+
+    # Not needed if the way camera parses data is modified
+    AES_bytes = bytearray(aes_key) + bytearray(aes_iv) + get_byte(15, 1)
+
+    # Encrypt using camera's public key
+    message_bytes = security.encrypt_rsa(
+        message_header+AES_bytes+payload_bytes, cam_pub_key)
+    final = generate_encrypt_header(1, 1, 1) + bytearray(message_bytes)
+    print("Sent Packet Request for " +
+            str(payload_bytes)[-10:], " to ", cam_addr)
+    # Send the request
+    #send_ready = select.select([], [sock], [], 1)
+    #if send_ready[1]:
+    #    sent = sock.sendto(final, cam_addr)
+    return final
+    '''
+
+def send_hello(sock, preferred_send_date, DELTA, server_addr):
+    send_ready = select.select([], [sock], [], 1)
+    if send_ready[1]:
+        if preferred_send_date is not None:
+            print("preferred send date is ", preferred_send_date)
+            diffs = compare_datetime(preferred_send_date)
+            print("diffs 3 are ", diffs, DELTA)
+            time.sleep(abs(diffs+DELTA))
+        sent = sock.sendto("HELLO".encode(), server_addr)
+        print("hello sent...")
+        #print("diff time was ", diffs)
+
+def send_hello1(sock, peer_address, PREFERRED_UDP_PORT,PUB_KEY,key,iv, preferred_send_date=None,DELTA=0):
+    try:
+        # Received Pure Hello Sending Hello1
+        # 3970643 4 1/1 32/nKEYIV/n[PAYLOAD]
+        hello1_msg = generate_hello1_message(PREFERRED_UDP_PORT)
+        payload_bytes = bytearray(str(PREFERRED_UDP_PORT).encode('utf-8'))
+        # KEY + IV/n
+        AES_bytes = bytearray(key) + bytearray(iv) + get_byte(15, 1)
+        message_bytes = security.encrypt_rsa(
+            hello1_msg+AES_bytes+payload_bytes, PUB_KEY)
+        final = generate_encrypt_header(1,1,1) + bytearray(message_bytes)
+        hello1_packet = final
+        send_ready = select.select([], [sock], [], 1)
+        if send_ready[1]:
+            diff = 0
+            if preferred_send_date is not None:
+                diff = compare_time(preferred_send_date)
+                print("diffs 2 are ", diff, DELTA)
+                time.sleep(abs(diff+DELTA))
+            sent = sock.sendto(hello1_packet, peer_address)
+            print("preferred_send_date: ", preferred_send_date)
+            print("diff: ", diff)
+            print("DELTA: ", DELTA)
+            print("Sleep Time: ", diff+DELTA)
+        #return hello1_packet
+
+    except Exception as err:
+        print("Exception in format_hello1", err)
+
+
+def send_hello2(sock, peer_address, PREFERRED_UDP_PORT,PUB_KEY,key,iv,DELTA):
+    try:
+        hello2_msg = generate_hello2_message(PREFERRED_UDP_PORT)
+        payload = str(PREFERRED_UDP_PORT)+","+datetime_to_str(datetime.datetime.utcnow())+","+str(DELTA)    # "PORT,Date,DELTA"
+        payload_bytes = bytearray(payload.encode('utf-8'))
+        encrypted_bytes = generate_encrypt_header(1,1,1)+ bytearray(security.encrypt_aes(hello2_msg+payload_bytes, key, iv))
+   
+        send_ready = select.select([], [sock], [], 1)
+        if send_ready[1]:
+            sent = sock.sendto(encrypted_bytes, peer_address)
+            print("sent hello 2") 
+    except Exception as err:
+        print("Exception in format_hello2", err)
+
+
+def send_hello3(sock, peer_address,DEVICE_PREFERRED_UDP_PORT,PUB_KEY,key,iv,preferred_future_send_date):
+    try:
+        hello3_msg = generate_hello3_message(DEVICE_PREFERRED_UDP_PORT)
+        payload = str(DEVICE_PREFERRED_UDP_PORT)+","+datetime_to_str(preferred_future_send_date)    # "PORT,Date"
+        payload_bytes = bytearray(payload.encode('utf-8'))
+
+        if PUB_KEY == 0: # Camera is sending hello3 to Device
+            encrypted_bytes = generate_encrypt_header(1,1,1) + bytearray(security.encrypt_aes(hello3_msg+payload_bytes, key, iv))
+        else:           # Device is sending hello3 to Camera
+            AES_bytes = bytearray(key) + bytearray(iv) + get_byte(15, 1)
+            message_bytes = security.encrypt_rsa(
+                hello3_msg+AES_bytes+payload_bytes, PUB_KEY)
+            encrypted_bytes = generate_encrypt_header(1,1,1) + bytearray(message_bytes)
+        
+        send_ready = select.select([], [sock], [], 1)
+        if send_ready[1]:
+            sent = sock.sendto(encrypted_bytes, peer_address)
+            print("sent hello 3")
+        
+    except Exception as err:
+        print("Exception in format_hello3", err)
