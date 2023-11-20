@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+    xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+    xmlns:wsdd="http://schemas.xmlsoap.org/ws/2005/04/discovery"
+    xmlns:chan="http://schemas.microsoft.com/ws/2005/02/duplex"
+    xmlns:wsa5="http://www.w3.org/2005/08/addressing"
+    xmlns:c14n="http://www.w3.org/2001/10/xml-exc-c14n#"
+    xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+    xmlns:xenc="http://www.w3.org/2001/04/xmlenc#"
+    xmlns:wsc="http://schemas.xmlsoap.org/ws/2005/02/sc"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+    xmlns:xmime="http://tempuri.org/xmime.xsd"
+    xmlns:xop="http://www.w3.org/2004/08/xop/include"
+    xmlns:tt="http://www.onvif.org/ver10/schema"
+    xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2"
+    xmlns:wsrfbf="http://docs.oasis-open.org/wsrf/bf-2"
+    xmlns:wstop="http://docs.oasis-open.org/wsn/t-1"
+    xmlns:dn="http://www.onvif.org/ver10/network/wsdl"
+    xmlns:tds="http://www.onvif.org/ver10/device/wsdl"
+    xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl"
+    xmlns:trt="http://www.onvif.org/ver10/media/wsdl">
+    <SOAP-ENV:Header>
+        <wsa:MessageID>uuid:dbd27f63-307e-11ee-bf63-00049f073007</wsa:MessageID>
+        <wsa:RelatesTo>uuid:dbb67909-307e-11ee-adbd-94659c3e6dd0</wsa:RelatesTo>
+        <wsa:To SOAP-ENV:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:To>
+        <wsa:Action SOAP-ENV:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</wsa:Action>
+        <wsdd:AppSequence MessageNumber="875" InstanceId="1690894444"></wsdd:AppSequence>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <wsdd:ProbeMatches>
+            <wsdd:ProbeMatch>
+                <wsa:EndpointReference>
+                    <wsa:Address>urn:uuid:06a4814b-004c-11ec-814b-000000000000</wsa:Address>
+                </wsa:EndpointReference>
+                <wsdd:Types>tds:Device dn:NetworkVideoTransmitter </wsdd:Types>
+                <wsdd:Scopes>onvif://www.onvif.org/Profile/Streaming onvif://www.onvif.org/hardware/VIPER-IR-Camera onvif://www.onvif.org/manufacturer/RealTime7-Inc onvif://www.onvif.org/location/building/headquarter onvif://www.onvif.org/name/VIPER-IR-Camera </wsdd:Scopes>
+                <wsdd:XAddrs>http://192.168.20.83:80/onvif/device_service</wsdd:XAddrs>
+                <wsdd:MetadataVersion>1</wsdd:MetadataVersion>
+            </wsdd:ProbeMatch>
+        </wsdd:ProbeMatches>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
