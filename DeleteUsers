@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope"
+  xmlns:enc="http://www.w3.org/2003/05/soap-encoding"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <env:Body>
+    <DeleteUsersResponse xmlns="http://www.onvif.org/ver10/device/wsdl"/>
+  </env:Body>
+</env:Envelope>
